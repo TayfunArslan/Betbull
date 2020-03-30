@@ -20,6 +20,7 @@ import java.net.URI
 class MainActivity : AppCompatActivity() {
     lateinit var mAdapter: ArrayAdapter<UserInfo>
     var mUserList = ArrayList<UserInfo>()
+    private lateinit var mWebSocketClient: WebSocketClient
 
     private inner class GetUsersTask : AsyncTask<Unit, String, UserInfoList>() {
         override fun onProgressUpdate(vararg values: String?) {
@@ -136,12 +137,17 @@ class MainActivity : AppCompatActivity() {
 
     private fun getNameWithId(id: Int) = mUserList.filter { it.userId == id }[0].username
 
+    override fun onDestroy() {
+        mWebSocketClient.close()
+        super.onDestroy()
+    }
+
     private inner class SocketTask : Thread() {
         override fun run() {
             try {
                 val uri: URI = URI.create("wss://echo.websocket.org")
 
-                var webSocketClient = object : WebSocketClient(uri) {
+                mWebSocketClient = object : WebSocketClient(uri) {
                     override fun onOpen(handshakedata: ServerHandshake?) {
                         send(mainActivityTextViewRequest.text.toString())
                     }
@@ -166,7 +172,7 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
 
-                webSocketClient.connect()
+                mWebSocketClient.connect()
             } catch (ex: Throwable) {
                 runOnUiThread {
                     Toast.makeText(this@MainActivity, ex.message, Toast.LENGTH_LONG).show()
