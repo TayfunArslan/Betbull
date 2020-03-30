@@ -14,19 +14,12 @@ import org.arslan.samples.forbetbull.model.UserInfoList
 import org.csystem.samples.forbetbull.R
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.handshake.ServerHandshake
-import java.io.BufferedReader
-import java.io.BufferedWriter
-import java.io.InputStreamReader
-import java.io.OutputStreamWriter
 import java.lang.Exception
-import java.net.Socket
 import java.net.URI
-
-var counter = 0
 
 class MainActivity : AppCompatActivity() {
     lateinit var mAdapter: ArrayAdapter<UserInfo>
-    lateinit var mSocket: Socket
+    var mUserList = ArrayList<UserInfo>()
 
     private inner class GetUsersTask : AsyncTask<Unit, String, UserInfoList>() {
         override fun onProgressUpdate(vararg values: String?) {
@@ -49,6 +42,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         override fun onPostExecute(result: UserInfoList) {
+            mUserList = ArrayList(result.userInfoList)
+
             mAdapter = ArrayAdapter(
                 this@MainActivity,
                 android.R.layout.simple_list_item_1,
@@ -68,7 +63,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun init() {
         initViews()
-        initWebSocketConnection()
         //....
     }
 
@@ -88,38 +82,41 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun onSendButtonClicked(view: View) {
-        EchoServerTask().execute(mainActivityTextViewRequest.text.toString())
-    }
-
-    private fun initWebSocketConnection() {
-        //GetSocketTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
-        //runOnUiThread(GetSocketThread())
-        EchoServerTask()
+        SocketTask().run()
     }
 
     private fun updateUI(s: String) {
         if (!::mAdapter.isInitialized || s.isBlank())
             return
 
-        //TODO Test amaçlı
-        mainActivityToolbarActiveUser.title = s.length.toString()
+        try {
+            if (s.toUpperCase() == "LOGIN") {
+                mainActivityToolbarActiveUser.title =
+                    applicationContext.resources.getString(R.string.ACTIVE_USER)
+                return
+            } else if (s.toUpperCase() == "LOGOUT") {
+                mainActivityToolbarActiveUser.title = "Logged out"
+                return
+            }
 
-        if (s == "LOGIN") {
-            mainActivityToolbarActiveUser.title =
-                applicationContext.resources.getString(R.string.ACTIVE_USER)
-            return
-        } else if (s == "LOGOUT") {
-            mainActivityToolbarActiveUser.title = "Logged out"
-            return
+            var id = getIdFromString(s)
+            var newName = getStringFromString(s)
+
+            if(id == -1 || newName.isNullOrBlank())
+                throw Exception("Format error!")
+
+            var oldName = getNameWithId(id)
+            var userInfo = UserInfo(id, oldName)
+
+            var position = mAdapter.getPosition(userInfo)
+
+            mAdapter.getItem(position)!!.username = newName
+            mAdapter.notifyDataSetChanged()
+        } catch (ex: Throwable) {
+            Toast.makeText(this, ex.message, Toast.LENGTH_LONG).show()
+        } finally {
+            mainActivityTextViewRequest.text.clear()
         }
-
-        var id = if (getIdFromString(s) == -1) getIdFromString(s) else return
-        var name = getStringFromString(s)
-
-        mAdapter.getItem(id)!!.username = name
-        mAdapter.notifyDataSetChanged()
-
-        return
     }
 
     private fun getIdFromString(s: String): Int { // ex: Input = 12 - Tayfun, output = 12
@@ -135,56 +132,46 @@ class MainActivity : AppCompatActivity() {
         return if (!retVal.isBlank()) retVal.toInt() else -1
     }
 
-    private fun getStringFromString(s: String) = s.substringAfter('-').trim()
+    private fun getStringFromString(s: String) = if(s.contains("-")) s.substringAfter('-').trim() else null
 
-    private inner class EchoServerTask : AsyncTask<String, String, String>() {
-        override fun doInBackground(vararg p0: String?): String {
-            var text = ""
+    private fun getNameWithId(id: Int) = mUserList.filter { it.userId == id }[0].username
 
+    private inner class SocketTask : Thread() {
+        override fun run() {
             try {
-//                Socket("ws://ws.achex.ca",80).use {
-//                    val br = BufferedReader(InputStreamReader(it.getInputStream()))
-//                    val bw = BufferedWriter(OutputStreamWriter(it.getOutputStream()))
-//
-//                    bw.write("${p0[0]!!}\r\n")
-//                    bw.flush()
-//
-//                    text = br.readLine().trim()
+                val uri: URI = URI.create("wss://echo.websocket.org")
 
-                var uri = URI.create("wss://echo.websocket.org")
-
-                var webSocketClient = object: WebSocketClient(uri) {
+                var webSocketClient = object : WebSocketClient(uri) {
                     override fun onOpen(handshakedata: ServerHandshake?) {
-                        text = "handshakedata.toString()"
+                        send(mainActivityTextViewRequest.text.toString())
                     }
 
                     override fun onClose(code: Int, reason: String?, remote: Boolean) {
-                        text = "close $reason"
+                        runOnUiThread {
+                            Toast.makeText(this@MainActivity, reason, Toast.LENGTH_LONG).show()
+                        }
                     }
 
                     override fun onMessage(message: String?) {
-                        text = message!!
+                        runOnUiThread {
+                            updateUI(message!!)
+                        }
                     }
 
                     override fun onError(ex: Exception?) {
-                        text = ex.toString()
+                        runOnUiThread {
+                            Toast.makeText(this@MainActivity, ex!!.message, Toast.LENGTH_LONG)
+                                .show()
+                        }
                     }
                 }
 
                 webSocketClient.connect()
-
-                return text
             } catch (ex: Throwable) {
-                return ex.message!!
+                runOnUiThread {
+                    Toast.makeText(this@MainActivity, ex.message, Toast.LENGTH_LONG).show()
+                }
             }
-        }
-
-        override fun onProgressUpdate(vararg values: String?) {
-            Toast.makeText(this@MainActivity, values[0], Toast.LENGTH_LONG).show()
-        }
-
-        override fun onPostExecute(result: String?) {
-            updateUI(result!!)
         }
     }
 }
