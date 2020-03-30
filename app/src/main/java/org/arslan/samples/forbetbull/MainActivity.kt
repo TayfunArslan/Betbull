@@ -2,7 +2,9 @@ package org.arslan.samples.forbetbull
 
 import android.os.AsyncTask
 import android.os.Bundle
-import android.view.View
+import android.os.Process
+import android.os.Process.THREAD_PRIORITY_BACKGROUND
+import android.os.Process.THREAD_PRIORITY_MORE_FAVORABLE
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -11,9 +13,11 @@ import org.arslan.samples.forbetbull.global.g_userInfoService
 import org.arslan.samples.forbetbull.model.UserInfo
 import org.arslan.samples.forbetbull.model.UserInfoList
 import org.csystem.samples.forbetbull.R
-import java.io.BufferedReader
-import java.io.InputStreamReader
+import org.java_websocket.client.WebSocketClient
+import org.java_websocket.handshake.ServerHandshake
 import java.net.Socket
+import java.net.URI
+
 
 class MainActivity : AppCompatActivity() {
     lateinit var mAdapter: ArrayAdapter<UserInfo>
@@ -25,6 +29,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         override fun doInBackground(vararg p0: Unit?): UserInfoList {
+            Process.setThreadPriority(THREAD_PRIORITY_BACKGROUND + THREAD_PRIORITY_MORE_FAVORABLE)
+
             try {
                 val call = g_userInfoService.getUsers()
                 val response = call.execute()
@@ -68,31 +74,40 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initToolbar() {
-        mainActivityToolbarActiveUser.title = applicationContext.resources.getString(R.string.ACTIVE_USER)
+        mainActivityToolbarActiveUser.title =
+            applicationContext.resources.getString(R.string.ACTIVE_USER)
     }
 
     private fun initListViewUsers() {
-        GetUsersTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
+        GetUsersTask().execute()
     }
 
     private fun initWebSocketConnection() {
         GetSocketTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
+        //runOnUiThread(GetSocketThread())
+        //GetSocketThread().start()
     }
 
     private fun updateUI(s: String) {
-        if(s == "LOGIN") {
-            mainActivityToolbarActiveUser.title = applicationContext.resources.getString(R.string.ACTIVE_USER)
+        if(!::mAdapter.isInitialized || s.isBlank())
             return
-        } else if(s == "LOGOUT") {
+
+        if (s == "LOGIN") {
+            mainActivityToolbarActiveUser.title =
+                applicationContext.resources.getString(R.string.ACTIVE_USER) + s
+            return
+        } else if (s == "LOGOUT") {
             mainActivityToolbarActiveUser.title = "Logged out"
             return
         }
 
         var id = getIdFromString(s)
+        if(id == -1)
+            return
+
         var name = getStringFromString(s)
 
         mAdapter.getItem(id)!!.username = name
-
         mAdapter.notifyDataSetChanged()
     }
 
@@ -106,29 +121,102 @@ class MainActivity : AppCompatActivity() {
                 break
         }
 
-        return retVal.toInt()
+        return if (!retVal.isBlank()) retVal.toInt() else -1
     }
 
     private fun getStringFromString(s: String) = s.substringAfter('-').trim()
+
+    private inner class GetSocketThread: Thread() {
+        override fun run() {
+            var text = ""
+
+            try {
+                var uri = URI.create("wss://websocket.org/echo.html")
+
+                var webSocketClient = object: WebSocketClient(uri) {
+                    override fun onOpen(handshakedata: ServerHandshake?) {
+                        text = "opened?"
+                    }
+
+                    override fun onClose(code: Int, reason: String?, remote: Boolean) {
+                        text = "close $reason"
+                    }
+
+                    override fun onMessage(message: String?) {
+                        text = message!!
+                    }
+
+                    override fun onError(ex: Exception?) {
+                        text = ex.toString()
+                    }
+                }
+
+                webSocketClient.connect()
+
+//
+//                mSocket = Socket(
+//                    "ws://echo.websocket.org",
+//                    80
+//                ) // TODO WebSocket olacak javax.websocket
+//                mSocket.connect(mSocket.localSocketAddress)
+//
+//                val br = BufferedReader(InputStreamReader(mSocket.getInputStream()))
+//                text = br.readLine().trim()
+            } catch (ex: Throwable) {
+                text = ex.message!!
+//                Toast.makeText(this@MainActivity, ex.message, Toast.LENGTH_LONG).show()
+            }
+
+            updateUI(text)
+        }
+
+    }
 
     private inner class GetSocketTask : AsyncTask<Unit, String, String>() {
         override fun doInBackground(vararg p0: Unit?): String {
             var text = ""
 
             try {
-                mSocket = Socket(
-                    "https://www.websocket.org/echo.html",
-                    8080
-                ) // TODO WebSocket olacak javax.websocket
-                mSocket.connect(mSocket.localSocketAddress)
 
-                val br = BufferedReader(InputStreamReader(mSocket.getInputStream()))
-                text = br.readLine().trim()
+                var uri = URI.create("wss://websocket.org/echo.html")
+
+                var webSocketClient = object: WebSocketClient(uri) {
+                    override fun onOpen(handshakedata: ServerHandshake?) {
+                        text = "opened?"
+                    }
+
+                    override fun onClose(code: Int, reason: String?, remote: Boolean) {
+                        text = "close $reason"
+                    }
+
+                    override fun onMessage(message: String?) {
+                        text = message!!
+                    }
+
+                    override fun onError(ex: Exception?) {
+                        text = ex.toString()
+                    }
+                }
+
+                webSocketClient.connect()
+
+                return text
             } catch (ex: Throwable) {
                 return ex.message!!
             }
-
-            return text
+//                mSocket = Socket(
+//                    "https://www.websocket.org/echo.html",
+//                    8080
+//                ) // TODO WebSocket olacak javax.websocket
+//                mSocket.connect(mSocket.localSocketAddress)
+//
+//                val br = BufferedReader(InputStreamReader(mSocket.getInputStream()))
+//                text = br.readLine().trim()
+//            } catch (ex: Throwable) {
+//                return ex.message!!
+//            }
+//
+//            return text
         }
 
         override fun onProgressUpdate(vararg values: String?) {
@@ -138,9 +226,5 @@ class MainActivity : AppCompatActivity() {
         override fun onPostExecute(result: String?) {
             updateUI(result!!)
         }
-    }
-
-    fun onClickTest(view: View) {
-        Toast.makeText(this, mSocket.isConnected.toString(), Toast.LENGTH_LONG).show()
     }
 }
