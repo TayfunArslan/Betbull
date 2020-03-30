@@ -33,7 +33,7 @@ android {
 dependencies {
     implementation "org.java-websocket:Java-WebSocket:1.4.1"
     implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
-    implementation group: 'javax.net.websocket', name: 'javax.net.websocket-api', version: '1.0-b08'
+ //   implementation group: 'javax.net.websocket', name: 'javax.net.websocket-api', version: '1.0-b08'
     implementation 'io.reactivex.rxjava3:rxjava:3.0.0'
     implementation 'io.reactivex.rxjava3:rxandroid:3.0.0'
     implementation 'com.jakewharton.rxbinding3:rxbinding:3.0.0'

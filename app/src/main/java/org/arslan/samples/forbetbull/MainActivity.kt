@@ -3,6 +3,7 @@ package org.arslan.samples.forbetbull
 import android.os.*
 import android.os.Process.THREAD_PRIORITY_BACKGROUND
 import android.os.Process.THREAD_PRIORITY_MORE_FAVORABLE
+import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -13,6 +14,10 @@ import org.arslan.samples.forbetbull.model.UserInfoList
 import org.csystem.samples.forbetbull.R
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.handshake.ServerHandshake
+import java.io.BufferedReader
+import java.io.BufferedWriter
+import java.io.InputStreamReader
+import java.io.OutputStreamWriter
 import java.lang.Exception
 import java.net.Socket
 import java.net.URI
@@ -82,10 +87,14 @@ class MainActivity : AppCompatActivity() {
         GetUsersTask().execute()
     }
 
+    fun onSendButtonClicked(view: View) {
+        EchoServerTask().execute(mainActivityTextViewRequest.text.toString())
+    }
+
     private fun initWebSocketConnection() {
         //GetSocketTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
         //runOnUiThread(GetSocketThread())
-        runOnUiThread(GetSocketThread())
+        EchoServerTask()
     }
 
     private fun updateUI(s: String) {
@@ -104,7 +113,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        var id = if(getIdFromString(s) == -1) getIdFromString(s) else return
+        var id = if (getIdFromString(s) == -1) getIdFromString(s) else return
         var name = getStringFromString(s)
 
         mAdapter.getItem(id)!!.username = name
@@ -128,88 +137,54 @@ class MainActivity : AppCompatActivity() {
 
     private fun getStringFromString(s: String) = s.substringAfter('-').trim()
 
-    private inner class GetSocketThread : Thread() {
-        override fun run() {
-            synchronized(this) {
-                var text = ""
-                try {
-                    var uri = URI.create("wss://echo.websocket.org")
+    private inner class EchoServerTask : AsyncTask<String, String, String>() {
+        override fun doInBackground(vararg p0: String?): String {
+            var text = ""
 
-                    var webSocketClient = object : WebSocketClient(uri) {
-                        override fun onOpen(handshakedata: ServerHandshake?) {
-                            counter++
-                            text = "opened and waiting for instructions $counter"
-                            updateUI(text)
-                        }
+            try {
+//                Socket("ws://ws.achex.ca",80).use {
+//                    val br = BufferedReader(InputStreamReader(it.getInputStream()))
+//                    val bw = BufferedWriter(OutputStreamWriter(it.getOutputStream()))
+//
+//                    bw.write("${p0[0]!!}\r\n")
+//                    bw.flush()
+//
+//                    text = br.readLine().trim()
 
-                        override fun onClose(code: Int, reason: String?, remote: Boolean) {
-                            text = "close $reason"
-                            updateUI(text)
-                        }
+                var uri = URI.create("wss://echo.websocket.org")
 
-                        override fun onMessage(message: String?) {
-                            text = message!!
-                            updateUI(text)
-                        }
-
-                        override fun onError(ex: Exception?) {
-                            text = ex.toString()
-                            updateUI(text)
-                        }
+                var webSocketClient = object: WebSocketClient(uri) {
+                    override fun onOpen(handshakedata: ServerHandshake?) {
+                        text = "handshakedata.toString()"
                     }
 
-                    webSocketClient.connect()
-                } catch (ex: Throwable) {
-                    text = ex.message!!
-                    updateUI(text)
+                    override fun onClose(code: Int, reason: String?, remote: Boolean) {
+                        text = "close $reason"
+                    }
+
+                    override fun onMessage(message: String?) {
+                        text = message!!
+                    }
+
+                    override fun onError(ex: Exception?) {
+                        text = ex.toString()
+                    }
                 }
 
-                updateUI(text)
+                webSocketClient.connect()
+
+                return text
+            } catch (ex: Throwable) {
+                return ex.message!!
             }
         }
 
-    }
+        override fun onProgressUpdate(vararg values: String?) {
+            Toast.makeText(this@MainActivity, values[0], Toast.LENGTH_LONG).show()
+        }
 
-//    private inner class GetSocketTask : AsyncTask<Unit, String, String>() {
-//        override fun doInBackground(vararg p0: Unit?): String {
-//            var text = ""
-//
-//            try {
-//
-//                var uri = URI.create("wss://echo.websocket.org")
-//
-//                var webSocketClient = object: WebSocketClient(uri) {
-//                    override fun onOpen(handshakedata: ServerHandshake?) {
-//                        text = "opened?"
-//                    }
-//
-//                    override fun onClose(code: Int, reason: String?, remote: Boolean) {
-//                        text = "close $reason"
-//                    }
-//
-//                    override fun onMessage(message: String?) {
-//                        text = message!!
-//                    }
-//
-//                    override fun onError(ex: Exception?) {
-//                        text = ex.toString()
-//                    }
-//                }
-//
-//               webSocketClient.connect()
-//
-//                return text
-//            } catch (ex: Throwable) {
-//                return ex.message!!
-//            }
-//        }
-//
-//        override fun onProgressUpdate(vararg values: String?) {
-//            updateUI(values[0]!!)
-//        }
-//
-//        override fun onPostExecute(result: String?) {
-//            updateUI(result!!)
-//        }
-//    }
+        override fun onPostExecute(result: String?) {
+            updateUI(result!!)
+        }
+    }
 }

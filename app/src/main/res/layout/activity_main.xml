@@ -16,10 +16,21 @@
         android:minHeight="?attr/actionBarSize"
         android:theme="?attr/actionBarTheme" />
 
+    <EditText
+        android:id="@+id/mainActivityTextViewRequest"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Entry" />
+
+    <Button
+        android:text="Request"
+        android:onClick="onSendButtonClicked"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
     <ListView
         android:id="@+id/mainActivityListViewUsers"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" >
     </ListView>
-
 </LinearLayout>
