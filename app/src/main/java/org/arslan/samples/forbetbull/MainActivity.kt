@@ -1,8 +1,6 @@
 package org.arslan.samples.forbetbull
 
-import android.os.AsyncTask
-import android.os.Bundle
-import android.os.Process
+import android.os.*
 import android.os.Process.THREAD_PRIORITY_BACKGROUND
 import android.os.Process.THREAD_PRIORITY_MORE_FAVORABLE
 import android.widget.ArrayAdapter
@@ -13,13 +11,13 @@ import org.arslan.samples.forbetbull.global.g_userInfoService
 import org.arslan.samples.forbetbull.model.UserInfo
 import org.arslan.samples.forbetbull.model.UserInfoList
 import org.csystem.samples.forbetbull.R
-import org.java_websocket.client.*
+import org.java_websocket.client.WebSocketClient
 import org.java_websocket.handshake.ServerHandshake
 import java.lang.Exception
 import java.net.Socket
 import java.net.URI
-import javax.websocket.WebSocketClient
 
+var counter = 0
 
 class MainActivity : AppCompatActivity() {
     lateinit var mAdapter: ArrayAdapter<UserInfo>
@@ -85,32 +83,34 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initWebSocketConnection() {
-        GetSocketTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
+        //GetSocketTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
         //runOnUiThread(GetSocketThread())
-        //GetSocketThread().start()
+        runOnUiThread(GetSocketThread())
     }
 
     private fun updateUI(s: String) {
-        if(!::mAdapter.isInitialized || s.isBlank())
+        if (!::mAdapter.isInitialized || s.isBlank())
             return
+
+        //TODO Test amaçlı
+        mainActivityToolbarActiveUser.title = s.length.toString()
 
         if (s == "LOGIN") {
             mainActivityToolbarActiveUser.title =
-                applicationContext.resources.getString(R.string.ACTIVE_USER) + s
+                applicationContext.resources.getString(R.string.ACTIVE_USER)
             return
         } else if (s == "LOGOUT") {
             mainActivityToolbarActiveUser.title = "Logged out"
             return
         }
 
-        var id = getIdFromString(s)
-        if(id == -1)
-            return
-
+        var id = if(getIdFromString(s) == -1) getIdFromString(s) else return
         var name = getStringFromString(s)
 
         mAdapter.getItem(id)!!.username = name
         mAdapter.notifyDataSetChanged()
+
+        return
     }
 
     private fun getIdFromString(s: String): Int { // ex: Input = 12 - Tayfun, output = 12
@@ -128,12 +128,55 @@ class MainActivity : AppCompatActivity() {
 
     private fun getStringFromString(s: String) = s.substringAfter('-').trim()
 
-//    private inner class GetSocketThread: Thread() {
-//        override fun run() {
+    private inner class GetSocketThread : Thread() {
+        override fun run() {
+            synchronized(this) {
+                var text = ""
+                try {
+                    var uri = URI.create("wss://echo.websocket.org")
+
+                    var webSocketClient = object : WebSocketClient(uri) {
+                        override fun onOpen(handshakedata: ServerHandshake?) {
+                            counter++
+                            text = "opened and waiting for instructions $counter"
+                            updateUI(text)
+                        }
+
+                        override fun onClose(code: Int, reason: String?, remote: Boolean) {
+                            text = "close $reason"
+                            updateUI(text)
+                        }
+
+                        override fun onMessage(message: String?) {
+                            text = message!!
+                            updateUI(text)
+                        }
+
+                        override fun onError(ex: Exception?) {
+                            text = ex.toString()
+                            updateUI(text)
+                        }
+                    }
+
+                    webSocketClient.connect()
+                } catch (ex: Throwable) {
+                    text = ex.message!!
+                    updateUI(text)
+                }
+
+                updateUI(text)
+            }
+        }
+
+    }
+
+//    private inner class GetSocketTask : AsyncTask<Unit, String, String>() {
+//        override fun doInBackground(vararg p0: Unit?): String {
 //            var text = ""
 //
 //            try {
-//                var uri = URI.create("wss://websocket.org/echo.html")
+//
+//                var uri = URI.create("wss://echo.websocket.org")
 //
 //                var webSocketClient = object: WebSocketClient(uri) {
 //                    override fun onOpen(handshakedata: ServerHandshake?) {
@@ -153,81 +196,20 @@ class MainActivity : AppCompatActivity() {
 //                    }
 //                }
 //
-//                webSocketClient.connect()
+//               webSocketClient.connect()
 //
-////
-////                mSocket = Socket(
-////                    "ws://echo.websocket.org",
-////                    80
-////                ) // TODO WebSocket olacak javax.websocket
-////                mSocket.connect(mSocket.localSocketAddress)
-////
-////                val br = BufferedReader(InputStreamReader(mSocket.getInputStream()))
-////                text = br.readLine().trim()
-//            } catch (ex: Throwable) {
-//                text = ex.message!!
-////                Toast.makeText(this@MainActivity, ex.message, Toast.LENGTH_LONG).show()
-//            }
-//
-//            updateUI(text)
-//        }
-//
-//    }
-
-    private inner class GetSocketTask : AsyncTask<Unit, String, String>() {
-        override fun doInBackground(vararg p0: Unit?): String {
-            var text = ""
-
-            try {
-
-                var uri = URI.create("wss://websocket.org/echo.html")
-
-                var webSocketClient = object: org.java_websocket.client.WebSocketClient(uri) {
-                    override fun onOpen(handshakedata: ServerHandshake?) {
-                        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-                    }
-
-                    override fun onClose(code: Int, reason: String?, remote: Boolean) {
-                        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-                    }
-
-                    override fun onMessage(message: String?) {
-                        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-                    }
-
-                    override fun onError(ex: Exception?) {
-                        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-                    }
-
-                }
-
-               webSocketClient.connect()
-
-                return text
-            } catch (ex: Throwable) {
-                return ex.message!!
-            }
-//                mSocket = Socket(
-//                    "https://www.websocket.org/echo.html",
-//                    8080
-//                ) // TODO WebSocket olacak javax.websocket
-//                mSocket.connect(mSocket.localSocketAddress)
-//
-//                val br = BufferedReader(InputStreamReader(mSocket.getInputStream()))
-//                text = br.readLine().trim()
+//                return text
 //            } catch (ex: Throwable) {
 //                return ex.message!!
 //            }
+//        }
 //
-//            return text
-        }
-
-        override fun onProgressUpdate(vararg values: String?) {
-            Toast.makeText(this@MainActivity, values[0], Toast.LENGTH_LONG).show()
-        }
-
-        override fun onPostExecute(result: String?) {
-            updateUI(result!!)
-        }
-    }
+//        override fun onProgressUpdate(vararg values: String?) {
+//            updateUI(values[0]!!)
+//        }
+//
+//        override fun onPostExecute(result: String?) {
+//            updateUI(result!!)
+//        }
+//    }
 }
