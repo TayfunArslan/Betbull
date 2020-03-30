@@ -86,6 +86,10 @@ class MainActivity : AppCompatActivity() {
         SocketTask().run()
     }
 
+    fun onExitButtonClicked(view: View) {
+        finish()
+    }
+
     private fun updateUI(s: String) {
         if (!::mAdapter.isInitialized || s.isBlank())
             return
