@@ -91,7 +91,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateUI(s: String) {
-        if (!::mAdapter.isInitialized || s.isBlank())
+        if (!::mAdapter.isInitialized || s.isNullOrBlank())
             return
 
         try {
