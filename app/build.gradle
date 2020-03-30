@@ -31,8 +31,7 @@ android {
 }
 
 dependencies {
-    implementation 'com.github.nkzawa:socket.io-client:0.5.0'
-    //implementation "org.java-websocket:Java-WebSocket:1.4.1"
+    implementation "org.java-websocket:Java-WebSocket:1.4.1"
     implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
     implementation group: 'javax.net.websocket', name: 'javax.net.websocket-api', version: '1.0-b08'
     implementation 'io.reactivex.rxjava3:rxjava:3.0.0'

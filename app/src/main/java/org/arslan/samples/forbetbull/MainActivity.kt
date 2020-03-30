@@ -13,10 +13,12 @@ import org.arslan.samples.forbetbull.global.g_userInfoService
 import org.arslan.samples.forbetbull.model.UserInfo
 import org.arslan.samples.forbetbull.model.UserInfoList
 import org.csystem.samples.forbetbull.R
-import org.java_websocket.client.WebSocketClient
+import org.java_websocket.client.*
 import org.java_websocket.handshake.ServerHandshake
+import java.lang.Exception
 import java.net.Socket
 import java.net.URI
+import javax.websocket.WebSocketClient
 
 
 class MainActivity : AppCompatActivity() {
@@ -126,51 +128,51 @@ class MainActivity : AppCompatActivity() {
 
     private fun getStringFromString(s: String) = s.substringAfter('-').trim()
 
-    private inner class GetSocketThread: Thread() {
-        override fun run() {
-            var text = ""
-
-            try {
-                var uri = URI.create("wss://websocket.org/echo.html")
-
-                var webSocketClient = object: WebSocketClient(uri) {
-                    override fun onOpen(handshakedata: ServerHandshake?) {
-                        text = "opened?"
-                    }
-
-                    override fun onClose(code: Int, reason: String?, remote: Boolean) {
-                        text = "close $reason"
-                    }
-
-                    override fun onMessage(message: String?) {
-                        text = message!!
-                    }
-
-                    override fun onError(ex: Exception?) {
-                        text = ex.toString()
-                    }
-                }
-
-                webSocketClient.connect()
-
+//    private inner class GetSocketThread: Thread() {
+//        override fun run() {
+//            var text = ""
 //
-//                mSocket = Socket(
-//                    "ws://echo.websocket.org",
-//                    80
-//                ) // TODO WebSocket olacak javax.websocket
-//                mSocket.connect(mSocket.localSocketAddress)
+//            try {
+//                var uri = URI.create("wss://websocket.org/echo.html")
 //
-//                val br = BufferedReader(InputStreamReader(mSocket.getInputStream()))
-//                text = br.readLine().trim()
-            } catch (ex: Throwable) {
-                text = ex.message!!
-//                Toast.makeText(this@MainActivity, ex.message, Toast.LENGTH_LONG).show()
-            }
-
-            updateUI(text)
-        }
-
-    }
+//                var webSocketClient = object: WebSocketClient(uri) {
+//                    override fun onOpen(handshakedata: ServerHandshake?) {
+//                        text = "opened?"
+//                    }
+//
+//                    override fun onClose(code: Int, reason: String?, remote: Boolean) {
+//                        text = "close $reason"
+//                    }
+//
+//                    override fun onMessage(message: String?) {
+//                        text = message!!
+//                    }
+//
+//                    override fun onError(ex: Exception?) {
+//                        text = ex.toString()
+//                    }
+//                }
+//
+//                webSocketClient.connect()
+//
+////
+////                mSocket = Socket(
+////                    "ws://echo.websocket.org",
+////                    80
+////                ) // TODO WebSocket olacak javax.websocket
+////                mSocket.connect(mSocket.localSocketAddress)
+////
+////                val br = BufferedReader(InputStreamReader(mSocket.getInputStream()))
+////                text = br.readLine().trim()
+//            } catch (ex: Throwable) {
+//                text = ex.message!!
+////                Toast.makeText(this@MainActivity, ex.message, Toast.LENGTH_LONG).show()
+//            }
+//
+//            updateUI(text)
+//        }
+//
+//    }
 
     private inner class GetSocketTask : AsyncTask<Unit, String, String>() {
         override fun doInBackground(vararg p0: Unit?): String {
@@ -180,25 +182,26 @@ class MainActivity : AppCompatActivity() {
 
                 var uri = URI.create("wss://websocket.org/echo.html")
 
-                var webSocketClient = object: WebSocketClient(uri) {
+                var webSocketClient = object: org.java_websocket.client.WebSocketClient(uri) {
                     override fun onOpen(handshakedata: ServerHandshake?) {
-                        text = "opened?"
+                        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
                     }
 
                     override fun onClose(code: Int, reason: String?, remote: Boolean) {
-                        text = "close $reason"
+                        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
                     }
 
                     override fun onMessage(message: String?) {
-                        text = message!!
+                        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
                     }
 
                     override fun onError(ex: Exception?) {
-                        text = ex.toString()
+                        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
                     }
+
                 }
 
-                webSocketClient.connect()
+               webSocketClient.connect()
 
                 return text
             } catch (ex: Throwable) {
