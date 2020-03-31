@@ -11,6 +11,7 @@ import kotlinx.android.synthetic.main.activity_main.*
 import org.arslan.samples.forbetbull.global.g_userInfoService
 import org.arslan.samples.forbetbull.model.UserInfo
 import org.arslan.samples.forbetbull.model.UserInfoList
+import org.arslan.samples.forbetbull.retrofit.enqueue
 import org.csystem.samples.forbetbull.R
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.handshake.ServerHandshake
@@ -21,40 +22,6 @@ class MainActivity : AppCompatActivity() {
     lateinit var mAdapter: ArrayAdapter<UserInfo>
     var mUserList = ArrayList<UserInfo>()
     private lateinit var mWebSocketClient: WebSocketClient
-
-    private inner class GetUsersTask : AsyncTask<Unit, String, UserInfoList>() {
-        override fun onProgressUpdate(vararg values: String?) {
-            Toast.makeText(this@MainActivity, values[0], Toast.LENGTH_LONG).show()
-        }
-
-        override fun doInBackground(vararg p0: Unit?): UserInfoList {
-            Process.setThreadPriority(THREAD_PRIORITY_BACKGROUND + THREAD_PRIORITY_MORE_FAVORABLE)
-
-            try {
-                val call = g_userInfoService.getUsers()
-                val response = call.execute()
-
-                return response.body()!!
-            } catch (ex: Throwable) {
-                publishProgress(ex.message)
-            }
-
-            return UserInfoList(ArrayList())
-        }
-
-        override fun onPostExecute(result: UserInfoList) {
-            mUserList = ArrayList(result.userInfoList)
-
-            mAdapter = ArrayAdapter(
-                this@MainActivity,
-                android.R.layout.simple_list_item_1,
-                result.userInfoList
-            )
-            mainActivityListViewUsers.adapter = mAdapter
-
-            super.onPostExecute(result)
-        }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -79,7 +46,29 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initListViewUsers() {
-        GetUsersTask().execute()
+        g_userInfoService.getUsers().enqueue {
+            onResponse = {
+                try {
+                    mUserList = ArrayList(it.body()!!.userInfoList)
+
+                    mAdapter = ArrayAdapter(
+                        this@MainActivity,
+                        android.R.layout.simple_list_item_1,
+                        mUserList
+                    )
+                    mainActivityListViewUsers.adapter = mAdapter
+                } catch (ex: Throwable) {
+                    runOnUiThread {
+                        Toast.makeText(this@MainActivity, ex!!.message, Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+            onFailure = {
+                runOnUiThread {
+                    Toast.makeText(this@MainActivity, it!!.message, Toast.LENGTH_LONG).show()
+                }
+            }
+        }
     }
 
     fun onSendButtonClicked(view: View) {
@@ -91,7 +80,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateUI(s: String) {
-        if (!::mAdapter.isInitialized || s.isNullOrBlank())
+        if (!::mAdapter.isInitialized || s.isBlank())
             return
 
         try {
@@ -107,7 +96,7 @@ class MainActivity : AppCompatActivity() {
             var id = getIdFromString(s)
             var newName = getStringFromString(s)
 
-            if(id == -1 || newName.isNullOrBlank())
+            if (id == -1 || newName.isNullOrBlank())
                 throw Exception("Format error!")
 
             var oldName = getNameWithId(id)
@@ -137,7 +126,8 @@ class MainActivity : AppCompatActivity() {
         return if (!retVal.isBlank()) retVal.toInt() else -1
     }
 
-    private fun getStringFromString(s: String) = if(s.contains("-")) s.substringAfter('-').trim() else null
+    private fun getStringFromString(s: String) =
+        if (s.contains("-")) s.substringAfter('-').trim() else null
 
     private fun getNameWithId(id: Int) = mUserList.filter { it.userId == id }[0].username
 
