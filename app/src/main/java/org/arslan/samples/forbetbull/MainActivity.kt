@@ -1,5 +1,6 @@
 package org.arslan.samples.forbetbull
 
+import android.content.Context
 import android.os.*
 import android.view.View
 import android.widget.ArrayAdapter
@@ -13,11 +14,13 @@ import org.csystem.samples.forbetbull.R
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.handshake.ServerHandshake
 import java.lang.Exception
+import java.lang.IllegalArgumentException
+import java.lang.UnsupportedOperationException
 import java.net.URI
 
 class MainActivity : AppCompatActivity() {
-    lateinit var mAdapter: ArrayAdapter<UserInfo>
-    var mUserList = ArrayList<UserInfo>()
+    private lateinit var mAdapter: ArrayAdapter<UserInfo>
+    private var mUserList = ArrayList<UserInfo>()
     private lateinit var mWebSocketClient: WebSocketClient
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -69,7 +72,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun onSendButtonClicked(view: View) {
-        if(!mainActivityTextViewRequest.text.toString().isBlank())
+        if (!mainActivityTextViewRequest.text.toString().isBlank())
             SocketTask().run()
     }
 
@@ -78,17 +81,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateUIWithResponse(s: String) {
-        if (!::mAdapter.isInitialized || s.isBlank())
-            return
-
         try {
-            if (s.toUpperCase().trim() == "LOGIN") {
-                mainActivityToolbarActiveUser.title =
-                    applicationContext.resources.getString(R.string.ACTIVE_USER)
-                return
-            } else if (s.toUpperCase().trim() == "LOGOUT") {
-                mainActivityToolbarActiveUser.title = "Logged out"
-                return
+            when(s.toUpperCase().trim()) {
+                "LOGIN" -> {
+                    mainActivityToolbarActiveUser.title =
+                        applicationContext.resources.getString(R.string.ACTIVE_USER)
+                    return
+                }
+                "LOGOUT" -> {
+                    mainActivityToolbarActiveUser.title = "Logged out"
+                    return
+                }
             }
 
             updateListView(s)
@@ -100,11 +103,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateListView(s: String) {
+        if(s.split('-').count() != 2)
+            throw UnsupportedOperationException("Format error!")
+
         var id = getIdFromResponse(s)
         var newName = getStringFromResponse(s)
 
         if (id == -1 || newName.isNullOrBlank())
-            throw Exception("Format error!")
+            throw UnsupportedOperationException("Format error!")
 
         var oldName = getNameWithId(id)
         var userInfo = UserInfo(id, oldName)
@@ -115,23 +121,13 @@ class MainActivity : AppCompatActivity() {
         mAdapter.notifyDataSetChanged()
     }
 
-    private fun getIdFromResponse(s: String): Int { // ex: Input = 12 - Tayfun, output = 12
-        var retVal = ""
-
-        for (value in s) {
-            if (value.isDigit())
-                retVal += value
-            else
-                break
-        }
-
-        return if (!retVal.isBlank()) retVal.toInt() else -1
-    }
+    private fun getIdFromResponse(s: String) =
+        if (s.contains('-')) s.split("-").first().trim().toInt() else -1
 
     private fun getStringFromResponse(s: String) =
-        if (s.contains("-")) s.substringAfter('-').trim() else null
+        if (s.contains('-')) s.trim().split("-").last().trim() else null
 
-    private fun getNameWithId(id: Int) = mUserList.filter { it.userId == id }[0].username
+    private fun getNameWithId(id: Int) = mUserList.first { it.userId == id }.username
 
     override fun onDestroy() {
         mWebSocketClient.close()
@@ -150,7 +146,8 @@ class MainActivity : AppCompatActivity() {
 
                     override fun onClose(code: Int, reason: String?, remote: Boolean) {
                         runOnUiThread {
-                            Toast.makeText(this@MainActivity, "$code $reason", Toast.LENGTH_LONG).show()
+                            Toast.makeText(this@MainActivity, "$code $reason", Toast.LENGTH_LONG)
+                                .show()
                         }
                     }
 
