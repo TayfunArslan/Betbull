@@ -103,8 +103,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateListView(s: String) {
-        var id = getIdFromString(s)
-        var newName = getStringFromString(s)
+        var id = getIdFromResponse(s)
+        var newName = getStringFromResponse(s)
 
         if (id == -1 || newName.isNullOrBlank())
             throw Exception("Format error!")
@@ -118,7 +118,7 @@ class MainActivity : AppCompatActivity() {
         mAdapter.notifyDataSetChanged()
     }
 
-    private fun getIdFromString(s: String): Int { // ex: Input = 12 - Tayfun, output = 12
+    private fun getIdFromResponse(s: String): Int { // ex: Input = 12 - Tayfun, output = 12
         var retVal = ""
 
         for (value in s) {
@@ -131,7 +131,7 @@ class MainActivity : AppCompatActivity() {
         return if (!retVal.isBlank()) retVal.toInt() else -1
     }
 
-    private fun getStringFromString(s: String) =
+    private fun getStringFromResponse(s: String) =
         if (s.contains("-")) s.substringAfter('-').trim() else null
 
     private fun getNameWithId(id: Int) = mUserList.filter { it.userId == id }[0].username
