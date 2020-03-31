@@ -92,11 +92,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateToolbar(s: String) {
-        if (s.toUpperCase() == "LOGIN") {
+        if (s.toUpperCase().trim() == "LOGIN") {
             mainActivityToolbarActiveUser.title =
                 applicationContext.resources.getString(R.string.ACTIVE_USER)
             return
-        } else if (s.toUpperCase() == "LOGOUT") {
+        } else if (s.toUpperCase().trim() == "LOGOUT") {
             mainActivityToolbarActiveUser.title = "Logged out"
             return
         }
