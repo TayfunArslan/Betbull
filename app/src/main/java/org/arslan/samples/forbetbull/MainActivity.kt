@@ -1,7 +1,6 @@
 package org.arslan.samples.forbetbull
 
-import android.content.Context
-import android.os.*
+import android.os.Bundle
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Toast
@@ -13,9 +12,6 @@ import org.arslan.samples.forbetbull.retrofitCallback.enqueue
 import org.csystem.samples.forbetbull.R
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.handshake.ServerHandshake
-import java.lang.Exception
-import java.lang.IllegalArgumentException
-import java.lang.UnsupportedOperationException
 import java.net.URI
 
 class MainActivity : AppCompatActivity() {
