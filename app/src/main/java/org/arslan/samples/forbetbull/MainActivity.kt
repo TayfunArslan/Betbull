@@ -1,8 +1,6 @@
 package org.arslan.samples.forbetbull
 
 import android.os.*
-import android.os.Process.THREAD_PRIORITY_BACKGROUND
-import android.os.Process.THREAD_PRIORITY_MORE_FAVORABLE
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Toast
@@ -10,7 +8,6 @@ import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
 import org.arslan.samples.forbetbull.global.g_userInfoService
 import org.arslan.samples.forbetbull.model.UserInfo
-import org.arslan.samples.forbetbull.model.UserInfoList
 import org.arslan.samples.forbetbull.retrofit.enqueue
 import org.csystem.samples.forbetbull.R
 import org.java_websocket.client.WebSocketClient
@@ -72,14 +69,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun onSendButtonClicked(view: View) {
-        SocketTask().run()
+        if(!mainActivityTextViewRequest.text.toString().isBlank())
+            SocketTask().run()
     }
 
     fun onExitButtonClicked(view: View) {
         finish()
     }
 
-    private fun updateUI(s: String) {
+    private fun updateUIWithResponse(s: String) {
         if (!::mAdapter.isInitialized || s.isBlank())
             return
 
@@ -148,13 +146,13 @@ class MainActivity : AppCompatActivity() {
 
                     override fun onClose(code: Int, reason: String?, remote: Boolean) {
                         runOnUiThread {
-                            Toast.makeText(this@MainActivity, reason, Toast.LENGTH_LONG).show()
+                            Toast.makeText(this@MainActivity, "$code $reason", Toast.LENGTH_LONG).show()
                         }
                     }
 
                     override fun onMessage(message: String?) {
                         runOnUiThread {
-                            updateUI(message!!)
+                            updateUIWithResponse(message!!)
                         }
                     }
 
