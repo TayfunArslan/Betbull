@@ -1,4 +1,4 @@
-package org.arslan.samples.forbetbull.retrofit
+package org.arslan.samples.forbetbull.retrofitCallback
 
 import retrofit2.Call
 import retrofit2.Callback

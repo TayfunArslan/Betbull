@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">ForBetbull</string>
     <string name="BASE_URL">https://my-json-server.typicode.com/</string>
+    <string name="SOCKET_URI">wss://echo.websocket.org</string>
     <string name="ACTIVE_USER">Tayfun</string>
 </resources>

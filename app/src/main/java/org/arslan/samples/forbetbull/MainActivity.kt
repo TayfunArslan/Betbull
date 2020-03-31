@@ -8,7 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
 import org.arslan.samples.forbetbull.global.g_userInfoService
 import org.arslan.samples.forbetbull.model.UserInfo
-import org.arslan.samples.forbetbull.retrofit.enqueue
+import org.arslan.samples.forbetbull.retrofitCallback.enqueue
 import org.csystem.samples.forbetbull.R
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.handshake.ServerHandshake
@@ -82,33 +82,40 @@ class MainActivity : AppCompatActivity() {
             return
 
         try {
-            if (s.toUpperCase() == "LOGIN") {
-                mainActivityToolbarActiveUser.title =
-                    applicationContext.resources.getString(R.string.ACTIVE_USER)
-                return
-            } else if (s.toUpperCase() == "LOGOUT") {
-                mainActivityToolbarActiveUser.title = "Logged out"
-                return
-            }
-
-            var id = getIdFromString(s)
-            var newName = getStringFromString(s)
-
-            if (id == -1 || newName.isNullOrBlank())
-                throw Exception("Format error!")
-
-            var oldName = getNameWithId(id)
-            var userInfo = UserInfo(id, oldName)
-
-            var position = mAdapter.getPosition(userInfo)
-
-            mAdapter.getItem(position)!!.username = newName
-            mAdapter.notifyDataSetChanged()
+            updateToolbar(s)
+            updateListView(s)
         } catch (ex: Throwable) {
             Toast.makeText(this, ex.message, Toast.LENGTH_LONG).show()
         } finally {
             mainActivityTextViewRequest.text.clear()
         }
+    }
+
+    private fun updateToolbar(s: String) {
+        if (s.toUpperCase() == "LOGIN") {
+            mainActivityToolbarActiveUser.title =
+                applicationContext.resources.getString(R.string.ACTIVE_USER)
+            return
+        } else if (s.toUpperCase() == "LOGOUT") {
+            mainActivityToolbarActiveUser.title = "Logged out"
+            return
+        }
+    }
+
+    private fun updateListView(s: String) {
+        var id = getIdFromString(s)
+        var newName = getStringFromString(s)
+
+        if (id == -1 || newName.isNullOrBlank())
+            throw Exception("Format error!")
+
+        var oldName = getNameWithId(id)
+        var userInfo = UserInfo(id, oldName)
+
+        var position = mAdapter.getPosition(userInfo)
+
+        mAdapter.getItem(position)!!.username = newName
+        mAdapter.notifyDataSetChanged()
     }
 
     private fun getIdFromString(s: String): Int { // ex: Input = 12 - Tayfun, output = 12
@@ -137,7 +144,7 @@ class MainActivity : AppCompatActivity() {
     private inner class SocketTask : Thread() {
         override fun run() {
             try {
-                val uri: URI = URI.create("wss://echo.websocket.org")
+                val uri: URI = URI.create(resources.getString(R.string.SOCKET_URI))
 
                 mWebSocketClient = object : WebSocketClient(uri) {
                     override fun onOpen(handshakedata: ServerHandshake?) {
