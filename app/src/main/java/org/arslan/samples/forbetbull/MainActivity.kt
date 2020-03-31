@@ -82,23 +82,20 @@ class MainActivity : AppCompatActivity() {
             return
 
         try {
-            updateToolbar(s)
+            if (s.toUpperCase().trim() == "LOGIN") {
+                mainActivityToolbarActiveUser.title =
+                    applicationContext.resources.getString(R.string.ACTIVE_USER)
+                return
+            } else if (s.toUpperCase().trim() == "LOGOUT") {
+                mainActivityToolbarActiveUser.title = "Logged out"
+                return
+            }
+
             updateListView(s)
         } catch (ex: Throwable) {
             Toast.makeText(this, ex.message, Toast.LENGTH_LONG).show()
         } finally {
             mainActivityTextViewRequest.text.clear()
-        }
-    }
-
-    private fun updateToolbar(s: String) {
-        if (s.toUpperCase().trim() == "LOGIN") {
-            mainActivityToolbarActiveUser.title =
-                applicationContext.resources.getString(R.string.ACTIVE_USER)
-            return
-        } else if (s.toUpperCase().trim() == "LOGOUT") {
-            mainActivityToolbarActiveUser.title = "Logged out"
-            return
         }
     }
 
